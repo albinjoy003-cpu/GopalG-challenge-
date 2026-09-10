@@ -86,15 +86,17 @@
         /* Wig image moving horizontally */
         #wig {
             position: absolute;
+            /* Adjust wig width/height to fit your wig PNG nicely */
             width: 200px; 
             height: 130px;
             object-fit: contain;
             z-index: 10;
+            /* Default vertical placement near top of head */
             top: 18vh; 
             pointer-events: none;
         }
 
-        /* Ideal Target spot */
+        /* Ideal Target spot (Center offset where wig should ideally be placed) */
         #target-spot {
             position: absolute;
             top: 22vh;
@@ -117,7 +119,6 @@
             justify-content: center;
             align-items: center;
             padding: 15px;
-            overflow-y: auto;
         }
 
         .result-card {
@@ -126,59 +127,39 @@
             border-radius: 20px;
             padding: 15px;
             text-align: center;
-            max-width: 380px;
-            width: 92%;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            max-width: 360px;
+            width: 90%;
             box-shadow: 0 0 25px rgba(255, 230, 0, 0.4);
             color: #fff;
-            overflow: hidden;
         }
 
         .marks-badge {
             display: inline-block;
             background: #FF0055;
             color: #FFF;
-            font-size: 1.8rem;
+            font-size: 2rem;
             font-weight: 900;
             padding: 5px 20px;
             border-radius: 50px;
-            margin: 5px 0;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            flex-shrink: 0;
-        }
-
-        /* Updated Preview container & image CSS for full size scaling */
-        .preview-container {
-            width: 100%;
-            flex: 1;
-            min-height: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             margin: 10px 0;
-            background: #000;
-            border-radius: 12px;
-            border: 2px solid #333;
-            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
 
         #result-preview {
             width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
+            max-height: 150px;
+            object-fit: contain;
+            border-radius: 10px;
+            border: 2px solid #333;
+            margin-bottom: 10px;
+            background: #000;
         }
 
         .btn-container {
             display: flex;
             gap: 10px;
             justify-content: center;
-            margin-top: 5px;
-            width: 100%;
-            flex-shrink: 0;
+            margin-top: 10px;
         }
 
         .btn {
@@ -193,7 +174,6 @@
             text-transform: uppercase;
             text-decoration: none;
             display: inline-block;
-            flex: 1;
         }
 
         .btn-whatsapp {
@@ -210,21 +190,25 @@
             <p class="instruction">Tap screen to set the wig!</p>
         </div>
 
+        <!-- Maximum size Gopalji background photo -->
         <img id="gopalji-head" src="gopalji.png" alt="Gopalji" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=gopalji';">
+
+        <!-- Wig image moving left to right -->
         <img id="wig" src="wig.png" alt="Wig" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3201/3201558.png';">
+
+        <!-- Target reference box -->
         <div id="target-spot"></div>
     </div>
 
     <!-- Result Popup Modal -->
     <div id="result-modal">
         <div class="result-card">
-            <h2 style="color: #FFE600; margin-bottom: 2px;">RESULT</h2>
+            <h2 style="color: #FFE600; margin-bottom: 5px;">RESULT</h2>
             <div id="marks-display" class="marks-badge">0 / 100</div>
-            <p id="feedback-text" style="font-weight: bold; margin-bottom: 5px; font-size: 0.9rem;">Checking accuracy...</p>
+            <p id="feedback-text" style="font-weight: bold; margin-bottom: 10px;">Checking accuracy...</p>
             
-            <div class="preview-container">
-                <img id="result-preview" src="" alt="Result Image">
-            </div>
+            <!-- Snapshot image showing final attempt -->
+            <img id="result-preview" src="" alt="Result Image">
 
             <div class="btn-container">
                 <button class="btn" onclick="resetGame()">Play Again</button>
@@ -243,8 +227,10 @@
         const whatsappBtn = document.getElementById('whatsapp-btn');
 
         let currentX = 0;
+        
+        // MEDIUM SPEED HORIZONTAL MOVEMENT
         let speed = 5; 
-        let direction = 1;
+        let direction = 1; // 1 = Right, -1 = Left
         let gameActive = true;
         let animationFrameId;
 
@@ -265,10 +251,10 @@
 
             if (currentX >= limits.maxX) {
                 currentX = limits.maxX;
-                direction = -1;
+                direction = -1; // Reverse left
             } else if (currentX <= limits.minX) {
                 currentX = limits.minX;
-                direction = 1;
+                direction = 1; // Reverse right
             }
 
             wig.style.left = currentX + 'px';
@@ -276,48 +262,46 @@
         }
 
         function handleTap(e) {
+            // Prevent trigger if clicking modal buttons
             if (e.target.closest('#result-modal')) return;
             if (!gameActive) return;
 
             gameActive = false;
             cancelAnimationFrame(animationFrameId);
 
+            // Calculate Marks (Accuracy)
             const stageWidth = stage.clientWidth;
             const wigWidth = wig.clientWidth;
-            const targetX = (stageWidth - wigWidth) / 2;
+            const targetX = (stageWidth - wigWidth) / 2; // Perfect horizontal center
 
             const distanceOffset = Math.abs(currentX - targetX);
             const maxAllowedError = stageWidth / 2;
 
+            // Calculate score out of 100
             let score = Math.max(0, Math.round(100 - (distanceOffset / maxAllowedError) * 100));
 
             showResultScreen(score);
         }
 
         function showResultScreen(score) {
-            // Capture full resolution before showing modal
-            html2canvas(stage, { 
-                useCORS: true, 
-                logging: false,
-                width: stage.clientWidth,
-                height: stage.clientHeight,
-                scale: window.devicePixelRatio || 1
-            }).then(canvas => {
+            marksDisplay.innerText = `${score} / 100`;
+
+            if (score >= 95) {
+                feedbackText.innerText = "🔥 PERFECT! Gopalji looks handsome!";
+            } else if (score >= 75) {
+                feedbackText.innerText = "😎 Good job! Nice hairstyle!";
+            } else if (score >= 45) {
+                feedbackText.innerText = "😂 Hilarious! Wig is slightly off!";
+            } else {
+                feedbackText.innerText = "💀 EPIC FAIL! Gopalji is still bald!";
+            }
+
+            // Capture stage screenshot as Result Image
+            html2canvas(stage, { useCORS: true, logging: false }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 resultPreview.src = imgData;
 
-                marksDisplay.innerText = `${score} / 100`;
-
-                if (score >= 95) {
-                    feedbackText.innerText = "🔥 PERFECT! Gopalji looks handsome!";
-                } else if (score >= 75) {
-                    feedbackText.innerText = "😎 Good job! Nice hairstyle!";
-                } else if (score >= 45) {
-                    feedbackText.innerText = "😂 Hilarious! Wig is slightly off!";
-                } else {
-                    feedbackText.innerText = "💀 EPIC FAIL! Gopalji is still bald!";
-                }
-
+                // WhatsApp text
                 const text = encodeURIComponent(`💥 *GOPALJI CHALLENGE* 💥\nI placed the wig on Gopalji and scored *${score}/100 Marks*! 😂\nCan you do better?`);
                 whatsappBtn.href = `https://api.whatsapp.com/send?text=${text}`;
 
@@ -329,6 +313,7 @@
             modal.style.display = 'none';
             gameActive = true;
             
+            // Random start direction and position
             const limits = getLimits();
             currentX = Math.floor(Math.random() * limits.maxX);
             direction = Math.random() > 0.5 ? 1 : -1;
@@ -336,8 +321,10 @@
             animate();
         }
 
+        // Tap triggers
         window.addEventListener('pointerdown', handleTap);
 
+        // Start
         window.onload = () => {
             resetGame();
         };
