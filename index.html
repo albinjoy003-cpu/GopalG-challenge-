@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GOPALJI CHALLENGE</title>
 
-    <!-- HTML2Canvas Library to capture game snapshot as image -->
+    <!-- HTML2Canvas Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@900&family=Poppins:wght@600;800;900&display=swap');
 
         * {
             box-sizing: border-box;
@@ -24,10 +24,9 @@
             height: 100%;
             overflow: hidden;
             background-color: #0d0d0d;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Poppins', sans-serif;
         }
 
-        /* Game Stage takes up full mobile screen */
         #game-stage {
             position: relative;
             width: 100vw;
@@ -37,149 +36,254 @@
             align-items: center;
             justify-content: space-between;
             overflow: hidden;
-            background: radial-gradient(circle, #2b1055, #000000);
+            background: radial-gradient(circle at center, #2b1055 0%, #090314 70%, #000000 100%);
             touch-action: manipulation;
+            cursor: pointer;
         }
 
-        /* Header / Title */
         .header-container {
             position: absolute;
-            top: 15px;
+            top: env(safe-area-inset-top, 15px);
             z-index: 20;
             text-align: center;
             width: 100%;
             pointer-events: none;
+            padding: 0 10px;
         }
 
         h1.title {
-            font-family: 'Verdana', 'Cinzel', sans-serif;
+            font-family: 'Cinzel', 'Verdana', sans-serif;
             font-weight: 900;
-            font-size: 2.2rem;
+            font-size: clamp(1.8rem, 6vw, 2.8rem);
             letter-spacing: 2px;
             color: #FFE500;
             text-transform: uppercase;
-            text-shadow: 3px 3px 0px #FF0055, 5px 5px 0px #000;
+            text-shadow: 0 0 10px rgba(255, 229, 0, 0.5), 3px 3px 0px #FF0055, 5px 5px 0px #000;
         }
 
         .instruction {
             color: #00FFFF;
-            font-weight: bold;
-            font-size: 0.9rem;
-            text-shadow: 1px 1px 3px #000;
-            margin-top: 5px;
+            font-weight: 800;
+            font-size: clamp(0.85rem, 3vw, 1.1rem);
+            text-shadow: 0 2px 4px #000;
+            margin-top: 4px;
+            letter-spacing: 0.5px;
+            animation: pulse 1.5s infinite alternate;
         }
 
-        /* Gopalji Photo fills max screen size */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.05); opacity: 1; }
+        }
+
         #gopalji-head {
             position: absolute;
             bottom: 0;
             left: 50%;
             transform: translateX(-50%);
             width: 100%;
-            height: 122vh;
+            max-width: 600px;
+            height: 85vh;
             object-fit: contain;
-            object-position: center;
+            object-position: bottom center;
             z-index: 1;
             pointer-events: none;
         }
 
-        /* Wig image moving horizontally */
         #wig {
             position: absolute;
-            /* Adjust wig width/height to fit your wig PNG nicely */
-            width: 200px; 
-            height: 130px;
+            width: min(220px, 45vw); 
+            height: auto;
+            max-height: 140px;
             object-fit: contain;
             z-index: 10;
-            /* Default vertical placement near top of head */
-            top: 18vh; 
+            top: 22%; 
             pointer-events: none;
+            will-change: transform;
+            filter: drop-shadow(0px 8px 6px rgba(0,0,0,0.4));
         }
 
-        /* Ideal Target spot (Center offset where wig should ideally be placed) */
         #target-spot {
             position: absolute;
-            top: 22vh;
+            top: 22%;
             left: 50%;
             transform: translateX(-50%);
-            width: 180px;
+            width: min(220px, 45vw);
             height: 120px;
             pointer-events: none;
             z-index: 2;
         }
 
-        /* Modal Overlay for Result */
-        #result-modal {
+        /* Countdown Overlay */
+        #countdown-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 80;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.4);
+            pointer-events: none;
+        }
+
+        #countdown-text {
+            font-family: 'Cinzel', sans-serif;
+            font-size: clamp(5rem, 20vw, 10rem);
+            font-weight: 900;
+            color: #FFE600;
+            text-shadow: 0 0 20px #FF0055, 4px 4px 0 #000;
+            animation: countZoom 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite;
+        }
+
+        @keyframes countZoom {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+
+        /* Modal Overlay */
+        .modal-bg {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             z-index: 100;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             padding: 15px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
-        .result-card {
-            background: #1a1a1a;
-            border: 3px solid #FFE600;
-            border-radius: 20px;
-            padding: 15px;
+        .modal-bg.show {
+            opacity: 1;
+        }
+
+        .modal-card {
+            background: linear-gradient(145deg, #1f1f2e, #111118);
+            border: 2px solid #FFE600;
+            border-radius: 24px;
+            padding: 20px;
             text-align: center;
-            max-width: 360px;
-            width: 90%;
-            box-shadow: 0 0 25px rgba(255, 230, 0, 0.4);
+            max-width: 420px;
+            width: 95%;
+            box-shadow: 0 0 35px rgba(255, 230, 0, 0.35);
             color: #fff;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        .marks-badge {
-            display: inline-block;
-            background: #FF0055;
-            color: #FFF;
-            font-size: 2rem;
-            font-weight: 900;
-            padding: 5px 20px;
-            border-radius: 50px;
-            margin: 10px 0;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        .modal-bg.show .modal-card {
+            transform: scale(1);
+        }
+
+        /* Difficulty Buttons */
+        .difficulty-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+            width: 100%;
+        }
+
+        .diff-btn {
+            background: #222;
+            color: #fff;
+            border: 2px solid #444;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+
+        .diff-btn.selected {
+            border-color: #FFE600;
+            background: #FFE600;
+            color: #000;
+            box-shadow: 0 0 12px rgba(255, 230, 0, 0.5);
+        }
+
+        /* Hero Image Box for Result Screen */
+        .preview-wrapper {
+            position: relative;
+            width: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid #333;
+            background: #000;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
         }
 
         #result-preview {
             width: 100%;
-            max-height: 150px;
+            height: clamp(240px, 45vh, 320px);
             object-fit: contain;
-            border-radius: 10px;
-            border: 2px solid #333;
-            margin-bottom: 10px;
-            background: #000;
+            display: block;
+        }
+
+        /* Overlay Badge on Image */
+        .marks-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: linear-gradient(135deg, #FF0055, #FF5500);
+            color: #FFF;
+            font-size: clamp(1.4rem, 4vw, 1.8rem);
+            font-weight: 900;
+            padding: 6px 18px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            letter-spacing: 1px;
+            backdrop-filter: blur(4px);
+        }
+
+        #feedback-text {
+            font-weight: 800;
+            font-size: clamp(0.95rem, 3.5vw, 1.1rem);
+            margin-bottom: 15px;
+            color: #00FFFF;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
 
         .btn-container {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             justify-content: center;
-            margin-top: 10px;
+            width: 100%;
         }
 
         .btn {
             background: #FFE600;
             color: #000;
             border: none;
-            padding: 10px 18px;
+            padding: 12px 20px;
             font-size: 0.95rem;
-            font-weight: bold;
-            border-radius: 25px;
+            font-weight: 800;
+            border-radius: 30px;
             cursor: pointer;
             text-transform: uppercase;
             text-decoration: none;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            flex: 1;
         }
 
-        .btn-whatsapp {
-            background: #25D366;
-            color: #FFF;
-        }
+        .btn:active { transform: scale(0.95); }
+        .btn-whatsapp { background: #25D366; color: #FFF; }
     </style>
 </head>
 <body>
@@ -190,28 +294,47 @@
             <p class="instruction">Tap screen to set the wig!</p>
         </div>
 
-        <!-- Maximum size Gopalji background photo -->
         <img id="gopalji-head" src="gopalji.png" alt="Gopalji" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=gopalji';">
-
-        <!-- Wig image moving left to right -->
         <img id="wig" src="wig.png" alt="Wig" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3201/3201558.png';">
-
-        <!-- Target reference box -->
         <div id="target-spot"></div>
+
+        <!-- Animated Countdown Overlay -->
+        <div id="countdown-overlay">
+            <div id="countdown-text">3</div>
+        </div>
     </div>
 
-    <!-- Result Popup Modal -->
-    <div id="result-modal">
-        <div class="result-card">
-            <h2 style="color: #FFE600; margin-bottom: 5px;">RESULT</h2>
-            <div id="marks-display" class="marks-badge">0 / 100</div>
-            <p id="feedback-text" style="font-weight: bold; margin-bottom: 10px;">Checking accuracy...</p>
+    <!-- Start & Difficulty Modal -->
+    <div id="start-modal" class="modal-bg">
+        <div class="modal-card">
+            <h2 style="color: #FFE600; margin-bottom: 5px;">SELECT DIFFICULTY</h2>
+            <p style="font-size: 0.85rem; color: #aaa;">Choose your challenge level</p>
+
+            <div class="difficulty-container">
+                <button class="diff-btn" onclick="setDifficulty('easy', this)">EASY</button>
+                <button class="diff-btn selected" onclick="setDifficulty('medium', this)">MEDIUM</button>
+                <button class="diff-btn" onclick="setDifficulty('hard', this)">HARD 🔥</button>
+            </div>
+
+            <button class="btn" style="width: 100%;" onclick="startCountdown()">START GAME</button>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div id="result-modal" class="modal-bg">
+        <div class="modal-card">
+            <h2 style="color: #FFE600; margin-bottom: 10px; font-size: 1.5rem; text-transform: uppercase;">Final Score</h2>
             
-            <!-- Snapshot image showing final attempt -->
-            <img id="result-preview" src="" alt="Result Image">
+            <!-- Hero Image Preview Container -->
+            <div class="preview-wrapper">
+                <img id="result-preview" src="" alt="Result Image">
+                <div id="marks-display" class="marks-badge">0 / 100</div>
+            </div>
+
+            <p id="feedback-text">Checking accuracy...</p>
 
             <div class="btn-container">
-                <button class="btn" onclick="resetGame()">Play Again</button>
+                <button class="btn" onclick="openStartMenu(event)">Play Again</button>
                 <a id="whatsapp-btn" class="btn btn-whatsapp" href="#" target="_blank">Share 📲</a>
             </div>
         </div>
@@ -220,71 +343,207 @@
     <script>
         const stage = document.getElementById('game-stage');
         const wig = document.getElementById('wig');
-        const modal = document.getElementById('result-modal');
+        const targetSpot = document.getElementById('target-spot');
+        const startModal = document.getElementById('start-modal');
+        const resultModal = document.getElementById('result-modal');
+        const countdownOverlay = document.getElementById('countdown-overlay');
+        const countdownText = document.getElementById('countdown-text');
         const marksDisplay = document.getElementById('marks-display');
         const feedbackText = document.getElementById('feedback-text');
         const resultPreview = document.getElementById('result-preview');
         const whatsappBtn = document.getElementById('whatsapp-btn');
 
         let currentX = 0;
-        
-        // MEDIUM SPEED HORIZONTAL MOVEMENT
-        let speed = 5; 
-        let direction = 1; // 1 = Right, -1 = Left
-        let gameActive = true;
+        let direction = 1;
+        let gameActive = false;
+        let isCountingDown = false;
         let animationFrameId;
+        let lastTimestamp = 0;
+
+        // Difficulty Settings
+        const DIFFICULTIES = {
+            easy: { speed: 280, errorTolerance: 0.65 },
+            medium: { speed: 480, errorTolerance: 0.50 },
+            hard: { speed: 750, errorTolerance: 0.35, randomJumps: true }
+        };
+        let currentDifficulty = 'medium';
+
+        // Sound Effects Engine
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'beep') {
+                osc.frequency.setValueAtTime(600, now);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'go') {
+                osc.frequency.setValueAtTime(900, now);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'tap') {
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(150, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'win') {
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(880, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'fail') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(80, now + 0.3);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+        }
+
+        function setDifficulty(level, btn) {
+            initAudio();
+            playSound('beep');
+            currentDifficulty = level;
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+
+        function openStartMenu(e) {
+            if (e) e.stopPropagation();
+            resultModal.classList.remove('show');
+            setTimeout(() => {
+                resultModal.style.display = 'none';
+                startModal.style.display = 'flex';
+                setTimeout(() => startModal.classList.add('show'), 10);
+            }, 250);
+        }
+
+        function startCountdown() {
+            initAudio();
+            startModal.classList.remove('show');
+
+            setTimeout(() => {
+                startModal.style.display = 'none';
+                countdownOverlay.style.display = 'flex';
+                isCountingDown = true;
+
+                let steps = ['3', '2', '1', 'GO!'];
+                let index = 0;
+
+                const runStep = () => {
+                    if (index < steps.length) {
+                        countdownText.innerText = steps[index];
+                        countdownText.style.animation = 'none';
+                        countdownText.offsetHeight; // trigger reflow
+                        countdownText.style.animation = 'countZoom 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite';
+
+                        playSound(index === steps.length - 1 ? 'go' : 'beep');
+                        index++;
+                        setTimeout(runStep, 800);
+                    } else {
+                        countdownOverlay.style.display = 'none';
+                        isCountingDown = false;
+                        startGame();
+                    }
+                };
+
+                runStep();
+            }, 250);
+        }
 
         function getLimits() {
             const stageWidth = stage.clientWidth;
             const wigWidth = wig.clientWidth;
-            return {
-                minX: 0,
-                maxX: stageWidth - wigWidth
-            };
+            return { minX: 0, maxX: Math.max(0, stageWidth - wigWidth) };
         }
 
-        function animate() {
-            if (!gameActive) return;
-
+        function startGame() {
             const limits = getLimits();
-            currentX += speed * direction;
+            currentX = Math.floor(Math.random() * limits.maxX);
+            direction = Math.random() > 0.5 ? 1 : -1;
+            
+            lastTimestamp = 0;
+            gameActive = true;
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        function animate(timestamp) {
+            if (!gameActive) return;
+            if (!lastTimestamp) lastTimestamp = timestamp;
+
+            const deltaTime = (timestamp - lastTimestamp) / 1000;
+            lastTimestamp = timestamp;
+
+            const config = DIFFICULTIES[currentDifficulty];
+            const limits = getLimits();
+
+            if (config.randomJumps && Math.random() < 0.05 * deltaTime) {
+                direction *= -1;
+            }
+
+            currentX += config.speed * direction * deltaTime;
 
             if (currentX >= limits.maxX) {
                 currentX = limits.maxX;
-                direction = -1; // Reverse left
+                direction = -1;
             } else if (currentX <= limits.minX) {
                 currentX = limits.minX;
-                direction = 1; // Reverse right
+                direction = 1;
             }
 
-            wig.style.left = currentX + 'px';
+            wig.style.left = `${currentX}px`;
             animationFrameId = requestAnimationFrame(animate);
         }
 
         function handleTap(e) {
-            // Prevent trigger if clicking modal buttons
-            if (e.target.closest('#result-modal')) return;
+            if (e.target.closest('.modal-bg') || isCountingDown) return;
             if (!gameActive) return;
 
             gameActive = false;
             cancelAnimationFrame(animationFrameId);
+            playSound('tap');
 
-            // Calculate Marks (Accuracy)
-            const stageWidth = stage.clientWidth;
-            const wigWidth = wig.clientWidth;
-            const targetX = (stageWidth - wigWidth) / 2; // Perfect horizontal center
+            const wigRect = wig.getBoundingClientRect();
+            const targetRect = targetSpot.getBoundingClientRect();
 
-            const distanceOffset = Math.abs(currentX - targetX);
-            const maxAllowedError = stageWidth / 2;
+            const wigCenter = wigRect.left + wigRect.width / 2;
+            const targetCenter = targetRect.left + targetRect.width / 2;
 
-            // Calculate score out of 100
+            const distanceOffset = Math.abs(wigCenter - targetCenter);
+            const maxAllowedError = (stage.clientWidth / 2) * DIFFICULTIES[currentDifficulty].errorTolerance;
+
             let score = Math.max(0, Math.round(100 - (distanceOffset / maxAllowedError) * 100));
 
             showResultScreen(score);
         }
 
         function showResultScreen(score) {
-            marksDisplay.innerText = `${score} / 100`;
+            playSound(score >= 70 ? 'win' : 'fail');
+
+            let currentScore = 0;
+            marksDisplay.innerText = `0 / 100`;
 
             if (score >= 95) {
                 feedbackText.innerText = "🔥 PERFECT! Gopalji looks handsome!";
@@ -296,38 +555,19 @@
                 feedbackText.innerText = "💀 EPIC FAIL! Gopalji is still bald!";
             }
 
-            // Capture stage screenshot as Result Image
-            html2canvas(stage, { useCORS: true, logging: false }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                resultPreview.src = imgData;
+            html2canvas(stage, { useCORS: true, logging: false, allowTaint: true }).then(canvas => {
+                resultPreview.src = canvas.toDataURL('image/png');
 
-                // WhatsApp text
-                const text = encodeURIComponent(`💥 *GOPALJI CHALLENGE* 💥\nI placed the wig on Gopalji and scored *${score}/100 Marks*! 😂\nCan you do better?`);
+                const text = encodeURIComponent(`💥 *GOPALJI CHALLENGE* (${currentDifficulty.toUpperCase()}) 💥\nI placed the wig on Gopalji and scored *${score}/100 Marks*! 😂\nCan you do better?`);
                 whatsappBtn.href = `https://api.whatsapp.com/send?text=${text}`;
 
-                modal.style.display = 'flex';
-            });
-        }
+                resultModal.style.display = 'flex';
+                setTimeout(() => resultModal.classList.add('show'), 10);
 
-        function resetGame() {
-            modal.style.display = 'none';
-            gameActive = true;
-            
-            // Random start direction and position
-            const limits = getLimits();
-            currentX = Math.floor(Math.random() * limits.maxX);
-            direction = Math.random() > 0.5 ? 1 : -1;
-
-            animate();
-        }
-
-        // Tap triggers
-        window.addEventListener('pointerdown', handleTap);
-
-        // Start
-        window.onload = () => {
-            resetGame();
-        };
-    </script>
-</body>
-</html>
+                const counterInterval = setInterval(() => {
+                    if (currentScore >= score) {
+                        marksDisplay.innerText = `${score} / 100`;
+                        clearInterval(counterInterval);
+                    } else {
+                        currentScore += Math.ceil(score / 15) || 1;
+                        if (currentScore > scor
